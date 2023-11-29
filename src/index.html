@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salary Calculator</title>
+</head>
+<body>
+    <h1>Salary Calculator</h1>
+    <form id="salaryForm">
+        <label for="salary">Salary:</label>
+        <input type="number" id="salary" name="salary" required><br><br>
+
+        <label for="year">Year:</label>
+        <input type="number" id="year" name="year" required><br><br>
+
+        <label for="calculateBeyondMax">Calculate Superannuation Beyond $27,500 Limit:</label>
+        <input type="checkbox" id="calculateBeyondMax" name="calculateBeyondMax"><br><br>
+
+        <input type="submit" value="Calculate">
+    </form>
+
+    <h2>Results:</h2>
+    <div id="results"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
