@@ -1,41 +1,68 @@
 // Import necessary modules and crates
 use axum::{
     routing::post,
+    routing::get,
     Router,
     Json,
     http::StatusCode,
 };
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
 use log::{info, error};
-use dotenv::dotenv;
-use std::env;
 
-// Include the tax module (make sure this module exists and is correctly implemented)
+// Module imports for additional functionality
+mod config;
+use config::Config;
+mod health;
+mod metrics;
 mod tax;
 
-// Main entry point for the application
+
 #[tokio::main]
-async fn main() {
-    dotenv().ok(); // Load environment variables if available
-    env_logger::init(); // Initialize the logger
+async fn main()
+{
+    // Initialize the logger
+    env_logger::init();
 
-    // Set up the web application and its routes
-    let app = Router::new().route("/calculate_tax", post(calculate_tax));
+    // Initialize a counter metric
+    let _counter = match metrics::initialize_counter() {
+        Ok(counter) => counter,
+        Err(error) => {
+            error!("{}", error);
+            std::process::exit(1);
+        }
+    };
 
-    // Configure the address and port for the server
-    let address = format!("{}:{}", 
-        env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string()), 
-        env::var("PORT").unwrap_or_else(|_| "3000".to_string()));
+    // Load configuration
+    let config = match Config::from_env() {
+        Ok(cfg) => cfg,
+        Err(e) => {
+            error!("Failed to load configuration: {}", e);
+            return;
+        }
+    };
 
-    let addr: SocketAddr = address.parse().expect("Invalid address");
-    info!("Listening on {}", addr);
+    // Log server start-up
+    info!("Starting server at {}", config.server_address);
 
-    // Run the Axum server
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    // Build our application with multiple routes
+    let app = Router::new()
+        .route("/calculate_tax", post(calculate_tax))
+        .route("/metrics", get(metrics::metrics_handler))
+        .route("/health", get(health::health_check));
+
+    // Run our app with hyper, listening globally
+    // Use configuration for setting up the server
+    
+    match tokio::net::TcpListener::bind(&config.server_address).await {
+        Ok(listener) => {
+            match axum::serve(listener, app).await {
+                Ok(_) => info!("Server running at {}", config.server_address),
+                Err(e) => error!("Server error: {}", e),
+            }
+        }
+        Err(e) => error!("Failed to bind to {}: {}", config.server_address, e),
+    }
+
 }
 
 // Struct to deserialize incoming JSON data for salary input

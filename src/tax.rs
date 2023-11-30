@@ -1,4 +1,3 @@
-// Define the TaxRate struct with fields for tax brackets and superannuation rate
 pub struct TaxRate {
     lower_limit: f64,              // Lower limit of the tax bracket
     upper_limit: Option<f64>,      // Upper limit of the tax bracket (optional)
@@ -56,3 +55,4 @@ pub fn get_superannuation_rate(year: u32) -> f64 {
         _ => 0.0, // Default case
     }
 }
+
